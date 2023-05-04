@@ -15,9 +15,10 @@ def main():
     else:
         mp = ProductModelProgram(options, args)
         Analyzer.explore(mp, options.maxTransitions)
-        print('%s states, %s transitions, %s accepting states, %s unsafe states' % \
-            (len(Analyzer.states),len(Analyzer.graph),len(Analyzer.accepting),len(Analyzer.unsafe)))
-        mname = options.output if options.output else '%sFSM' % args[0]
+        print(
+            f'{len(Analyzer.states)} states, {len(Analyzer.graph)} transitions, {len(Analyzer.accepting)} accepting states, {len(Analyzer.unsafe)} unsafe states'
+        )
+        mname = options.output if options.output else f'{args[0]}FSM'
         Analyzer.save(mname)
 
 if __name__ == '__main__':

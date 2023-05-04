@@ -13,7 +13,7 @@ if len(sys.argv) != 2:
 try:
   test = __import__(sys.argv[1])
 except ModuleNotFoundError:
-  print('\nCould not find tests file "{}".\n\n'.format(sys.argv[1]))
+  print(f'\nCould not find tests file "{sys.argv[1]}".\n\n')
   sys.exit()
 
 # Test cases are in 'cases', a list of pairs of strings, descrip. and commmand:
@@ -28,5 +28,5 @@ try:
     os.system(cmd)
     print()
 except AttributeError:
-  print('\nCould not find test cases in "{}".\n\n'.format(sys.argv[1]))
+  print(f'\nCould not find test cases in "{sys.argv[1]}".\n\n')
   sys.exit()

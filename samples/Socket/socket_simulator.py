@@ -111,8 +111,7 @@ class socket(object):
         if errors:
             msglist = [ 'X' if (random.random() < 1.0/errors) else c 
                         for c in msglist ]
-        msg = ''.join(msglist) # turn list of chars back to string
-        return msg
+        return ''.join(msglist)
 
     def close(self): pass
 

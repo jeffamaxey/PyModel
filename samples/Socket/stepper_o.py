@@ -49,7 +49,7 @@ def test_action(aname, args, modelResult):
     n = connection.sender.send(msg.encode())
     observation.queue.append(('send_return', (n,)))
     return None # pmt will check observation_queue
-  
+
   elif aname == 'recv_call':
     (bufsize,) = args
     msg = connection.receiver.recv(bufsize).decode()
@@ -57,4 +57,4 @@ def test_action(aname, args, modelResult):
     return None # pmt will check observation_queue
 
   else:
-    raise NotImplementedError('action not supported by stepper: %s' % aname)
+    raise NotImplementedError(f'action not supported by stepper: {aname}')

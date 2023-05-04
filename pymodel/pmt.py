@@ -34,14 +34,14 @@ def SelectAction(enabled):
 
 # for printing output file
 def fmtarg(arg):
-  return '%s' % arg # FIXME, quotes around literal strings, print None
+  return f'{arg}'
 
 def fmtargs(args):
-  return '%s' % args # FIXME?
+  return f'{args}'
   #return ','.join([ fmtarg(arg) for arg in args ])
 
 def quote(s):
-  return "'%s'" % s if isinstance(s, str) else s
+  return f"'{s}'" if isinstance(s, str) else s
 
 def RunTest(options, mp, stepper, strategy, f, krun):
   """
@@ -49,7 +49,7 @@ def RunTest(options, mp, stepper, strategy, f, krun):
   """
   if options.output:
     f.write('  [\n')
-  isteps = 0  
+  isteps = 0
   failMessage = None # no failMessage indicates success
   observable_action = False
   infoMessage = ''
@@ -72,41 +72,35 @@ def RunTest(options, mp, stepper, strategy, f, krun):
       if not mp.ActionEnabled(aname, args):
         # args here is return value captured from implementation
         # might be more helpful to also show expected return value here
-        failMessage = '%s%s, action not enabled' % (aname, args)
+        failMessage = f'{aname}{args}, action not enabled'
         break
-      else:
-        pass # go on, execute observable action in model BUT NOT stepper!
-      # don't forget to reset observable_action at the bottom of while body
-      
-    # controllable action
+          # don't forget to reset observable_action at the bottom of while body
+
     else: 
       # EnabledTranstions returns: [(aname,args,result,next,properties),...]
-      enabled = mp.EnabledTransitions(cleanup) 
+      enabled = mp.EnabledTransitions(cleanup)
       (aname, args) = strategy.SelectAction(enabled)
       # exit conditions
       if not aname: 
-          if observation.asynch:
-            # before exit, wait for item to appear in observation queue
-            stepper.wait(options.timeout if options.timeout else None)
-            continue # get observable action from queue
-          # if not asynch, come directly here
-          # if asynch, only reach here if wait times out        
-          if not cleanup:
-              infoMessage = 'no more actions enabled'
-          break   
+        if observation.asynch:
+          # before exit, wait for item to appear in observation queue
+          stepper.wait(options.timeout if options.timeout else None)
+          continue # get observable action from queue
+        # if not asynch, come directly here
+        # if asynch, only reach here if wait times out        
+        if not cleanup:
+            infoMessage = 'no more actions enabled'
+        break
       elif cleanup and mp.Accepting():
         break
-      else:
-        pass # go on, execute controllable action in model and maybe stepper
-
     # execute the action in the model and print progress message
-    isteps = isteps + 1
+    isteps += 1
     modelResult = mp.DoAction(aname, args) # Execute in model, get result
     qResult = quote(modelResult)
-    if modelResult != None:
-      print(aname if options.quiet else '%s%s / %s' % (aname, args, qResult))
+    if modelResult is None:
+      print(aname if options.quiet else f'{aname}{args}')
     else:
-      print(aname if options.quiet else '%s%s' % (aname, args))
+      print(aname if options.quiet else f'{aname}{args} / {qResult}')
     if options.output:
       if qResult != None:
         f.write('    (%s, %s, %s),\n' % (aname, args, qResult))
@@ -115,33 +109,28 @@ def RunTest(options, mp, stepper, strategy, f, krun):
 
     # execute controllable action in the stepper if present
     if stepper and not observable_action:
-        failMessage = None
-        try:
-          if options.timeout:
-            # docs.python.org/library/signal says Availability: Unix
-            # tested on Mac OS X, might not work on Windows
-            signal.alarm(options.timeout) # schedule timeout
-          # Execute action in stepper
-          result = stepper.TestAction(aname, args, modelResult)
-          if options.timeout:
-            signal.alarm(0) # cancel timeout
+      failMessage = None
+      try:
+        if options.timeout:
+          # docs.python.org/library/signal says Availability: Unix
+          # tested on Mac OS X, might not work on Windows
+          signal.alarm(options.timeout) # schedule timeout
+        # Execute action in stepper
+        result = stepper.TestAction(aname, args, modelResult)
+        if options.timeout:
+          signal.alarm(0) # cancel timeout
           # stepper returns None to indicate success
-          if result == None: 
-            pass # success, go on to next step
-          # stepper returns string to indicate failure
-          elif isinstance(result, str):  
-            failMessage = result # failure, prepare to print message
-          # stepper may append observable action to observation_queue
-          #  if so, will be detected by if observation_queue: at top of loop
-          else:
-            failMessage = 'stepper returned unhandled result: %s' % (result,)
-        except BaseException as e:
-          traceback.print_exc() # looks just like unhandled exception
-          failMessage = 'stepper raised exception: %s, %s' % \
-              (e.__class__.__name__, e)
-        if failMessage:
-          break 
-    # not stepper or observable_action
+        if result is None: 
+          pass # success, go on to next step
+        elif isinstance(result, str):  
+          failMessage = result # failure, prepare to print message
+        else:
+          failMessage = f'stepper returned unhandled result: {result}'
+      except BaseException as e:
+        traceback.print_exc() # looks just like unhandled exception
+        failMessage = f'stepper raised exception: {e.__class__.__name__}, {e}'
+      if failMessage:
+        break
     else:
       observable_action = False # must reset in all paths through while body
 
@@ -151,21 +140,24 @@ def RunTest(options, mp, stepper, strategy, f, krun):
       cleanup = True
       maxsteps += options.cleanupSteps
 
-    # end one test run step      
+      # end one test run step      
   # end while executing test run steps
 
   # Print test run outcome, including explanation and accepting state status
   acceptMsg = 'reached accepting state' if mp.Accepting() else \
                 'ended in non-accepting state'
-  infoMessage += '%s%s' % (', ' if infoMessage else '', acceptMsg)
+  infoMessage += f"{', ' if infoMessage else ''}{acceptMsg}"
   if stepper and not mp.Accepting() and not failMessage:
       failMessage = infoMessage # test run ends in non-accepting state: fail
   if failMessage:
     print('%3d. Failure at step %s, %s' % (krun, isteps, failMessage))
   else:
-    print('%3d. %s at step %s%s' % (krun, 'Success' if stepper else 'Finished',
-                                   isteps, 
-                                   (', %s' % infoMessage) if infoMessage else ''))
+    print(('%3d. %s at step %s%s' % (
+        krun,
+        'Success' if stepper else 'Finished',
+        isteps,
+        f', {infoMessage}' if infoMessage else '',
+    )))
   if options.output:
     f.write('  ],\n')
 
@@ -205,13 +197,13 @@ def main():
 
   f = None # must be bound when passed to RunTest
   if options.output:
-    f = open("%s.py" % options.output, 'w')
+    f = open(f"{options.output}.py", 'w')
     f.write('\n# %s' % os.path.basename(sys.argv[0])) # echo command line ... 
-    f.write(' %s\n' % ' '.join(['%s' % arg for arg in sys.argv[1:]])) # ...etc.
+    f.write(' %s\n' % ' '.join([f'{arg}' for arg in sys.argv[1:]]))
     f.write('\n# actions here are just labels, but must be symbols with __name__ attribute\n\n')
     f.writelines([ 'def %s(): pass\n' % aname for aname in mp.anames ])
     f.write('\n# action symbols\n')
-    f.write('actions = (%s)\n' % ', '.join([ aname for aname in mp.anames]))
+    f.write('actions = (%s)\n' % ', '.join(list(mp.anames)))
     f.write('\ntestSuite = [\n')
 
   if options.timeout:
@@ -230,9 +222,9 @@ def main():
       if stepper:
         stepper.Reset()
     RunTest(options, mp, stepper, strategy, f, k)
-    k += 1     
+    k += 1
   if k > 1:
-    print('Test finished, completed %s runs' % k)
+    print(f'Test finished, completed {k} runs')
 
   if options.output:
     f.write(']')

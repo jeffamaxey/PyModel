@@ -31,19 +31,19 @@ def listen():
 
 # Define function for sender connect - also used in stepper reset()
 def connect():
-  global sender, receiver, msg, n, bufsize
-  sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  # get and print send buffer size, just FYI
-  sndbuf = sender.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
-  print('Sender creates socket with SNDBUF size %s' % (sndbuf))
-  sender.connect(('localhost', port))
-  print('Sender connects to localhost port %s' % port)
-  receiver, addr = listener.accept()
-  print('Server accepts connection from ', addr)
-  # State needed to remember _call args for __return
-  msg = ''
-  n = 0
-  bufsize = 0
+    global sender, receiver, msg, n, bufsize
+    sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # get and print send buffer size, just FYI
+    sndbuf = sender.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
+    print(f'Sender creates socket with SNDBUF size {sndbuf}')
+    sender.connect(('localhost', port))
+    print(f'Sender connects to localhost port {port}')
+    receiver, addr = listener.accept()
+    print('Server accepts connection from ', addr)
+    # State needed to remember _call args for __return
+    msg = ''
+    n = 0
+    bufsize = 0
 
 def close():
   global sender, receiver

@@ -34,19 +34,18 @@ def print_help():
   parser.print_help()  # must have at least one arg, not optional
     
 def main():
-    (options, args) = parse_args()
-    if not args:
-        print_help()
-        exit()
-    app_module = args[0]
-    app = __import__(app_module)
-    application = app.application
-    print("Running %s at http://localhost:%s/" \
-        % (app_module, options.port))
-    httpd = simple_server.WSGIServer(('', options.port), 
-                                     simple_server.WSGIRequestHandler)
-    httpd.set_app(application)
-    httpd.serve_forever()
+  (options, args) = parse_args()
+  if not args:
+      print_help()
+      exit()
+  app_module = args[0]
+  app = __import__(app_module)
+  application = app.application
+  print(f"Running {app_module} at http://localhost:{options.port}/")
+  httpd = simple_server.WSGIServer(('', options.port), 
+                                   simple_server.WSGIRequestHandler)
+  httpd.set_app(application)
+  httpd.serve_forever()
 
 if __name__ == '__main__':
     main()

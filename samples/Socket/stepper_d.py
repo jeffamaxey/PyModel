@@ -52,16 +52,16 @@ def test_action(aname, args, model_result):
     (msg,) = args
 
   elif aname == 'send_return':
-    (n,) = args 
+    (n,) = args
     nchars = connection.sender.send(msg.encode())
     if n != nchars:
-      return 'send returned %s, expected %s ' % (nchars, n)
+      return f'send returned {nchars}, expected {n} '
 
   elif aname == 'recv_call':
     (bufsize,) = args
 
   elif aname == 'recv_return':
-    (msg,) = args 
+    (msg,) = args
     data = connection.receiver.recv(bufsize).decode()
     if data != msg: # now msg is like old modelresult
       # wrapped failMessage should fit on two 80 char lines, 
@@ -69,11 +69,9 @@ def test_action(aname, args, model_result):
       maxlen = 40 # max number of chars from msg to print in failMessage
       nd = len(data)
       nm = len(msg)
-      sdata =  data if nd <= maxlen \
-          else data[:maxlen/2] + '...' + data[-maxlen/2:]
-      smodel =  msg if nm <= maxlen \
-          else msg[:maxlen/2] + '...' + msg[-maxlen/2:]
-      return 'recv returned %s (%s), expected %s (%s)' % (sdata, nd, smodel, nm)
+      sdata = data if nd <= maxlen else f'{data[:maxlen / 2]}...{data[-maxlen / 2:]}'
+      smodel = msg if nm <= maxlen else f'{msg[:maxlen / 2]}...{msg[-maxlen / 2:]}'
+      return f'recv returned {sdata} ({nd}), expected {smodel} ({nm})'
 
   else:
-    raise NotImplementedError('action not supported by stepper: %s' % aname)
+    raise NotImplementedError(f'action not supported by stepper: {aname}')

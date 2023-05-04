@@ -23,10 +23,8 @@ class FSM(Model):
     #  BUT it is used in several places in Model and ProductModelProgram
     # EnabledTransitions below works directly on self.module.graph,
     #  not self.actions
-    if not hasattr(self.module, 'actions'):
-      self.actions = list(self.actions_in_graph()) # default, make copy
-    else:
-      self.actions = list(self.module.actions) # copy
+    self.actions = (list(self.module.actions) if hasattr(self.module, 'actions')
+                    else list(self.actions_in_graph()))
     Model.post_init(self) # uses self.actions
     # Construct self.graph like self.module.graph 
     #  BUT also accounts for include, exclude via self.actions
@@ -38,8 +36,10 @@ class FSM(Model):
 
 
   def actions_in_graph(self):
-    return tuple(set([ action for (current, (action,args,result), next) in 
-                       self.module.graph])) # not self.graph, here ONLY
+    return tuple({
+        action
+        for (current, (action, args, result), next) in self.module.graph
+    })
 
   def make_properties(self, state):
     return { 'accepting': state in self.module.accepting, 'statefilter': True,
@@ -69,10 +69,9 @@ class FSM(Model):
     """
     # no cleanup check here
     # any args matches empty arguments in FSM
-    return any([(a == action and (not arguments or args == arguments))
-                for (current,(action, arguments, result),next) 
-                in self.graph
-                if current == self.current ])
+    return any((a == action and (not arguments or args == arguments))
+               for (current, (action, arguments, result), next) in self.graph
+               if current == self.current)
 
   def EnabledTransitions(self, cleanup=False):
     """
@@ -85,13 +84,13 @@ class FSM(Model):
             if current == self.current ]
 
   def DoAction(self, a, arguments):
-    ts = [(current,(action,args,result),next)
-             for (current,(action,args,result),next) in self.graph 
-             if current == self.current and action == a 
-             and args == arguments[0:len(args)]] #ignore extra trailing args
+    ts = [(current, (action, args, result), next)
+          for (current, (action, args, result), next) in self.graph
+          if current == self.current and action == a
+          and args == arguments[:len(args)]]
     # print 'List ts %s' % ts # DEBUG
     # Might be nondet. FSM: for now, just pick first transition that matches
-    current, (action,args,result), self.current = ts[0] 
+    current, (action,args,result), self.current = ts[0]
     return result
 
   def Current(self):

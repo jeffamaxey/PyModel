@@ -33,8 +33,8 @@ class ProductModelProgram(object):
  
   def __init__(self, options, args):
     self.TestSuite = False # used by pmt nruns logic
-    self.module = dict()  # dict of modules keyed by name
-    self.mp = dict()      # dict of model programs keyed by same module name
+    self.module = {}
+    self.mp = {}
 
     if DEBUG:
         self.pp = pprint.PrettyPrinter(width=120)
@@ -44,19 +44,17 @@ class ProductModelProgram(object):
     #  so we find out what type to wrap each one in 
     #  by checking for one of each type's required attributes using hasattr
     for mname in args: # args is list of module name
-      self.module[mname] = __import__(mname) 
+      self.module[mname] = __import__(mname)
       if hasattr(self.module[mname], 'graph'):
         self.mp[mname] = FSM(self.module[mname],options.exclude,options.action)
-      # for backwards compatibility we accept all of these test_suite variants
       elif (hasattr(self.module[mname], 'testSuite') or 
             hasattr(self.module[mname], 'testsuite') or 
             hasattr(self.module[mname], 'test_suite')):
         self.mp[mname] = TestSuite(self.module[mname], 
                                    options.exclude, options.action)
         self.TestSuite = True # used by pmt nruns logic
-      elif self.module[mname].__doc__.strip().upper().startswith('PYMODEL CONFIG'):
-        pass # configuration module, merely importing it did all the work
-      else:
+      elif (not self.module[mname].__doc__.strip().upper().startswith(
+            'PYMODEL CONFIG')):
         # got this far, should be a ModelProgram -- if not, crash
         self.mp[mname] = ModelProgram(self.module[mname], 
                                       options.exclude, options.action)
@@ -68,23 +66,27 @@ class ProductModelProgram(object):
       mp.post_init()
 
     # set of all anames in all model programs - the vocabulary of the product
-    self.anames = set().union(*[set([a.__name__ for a in mp.actions ])
-                                for mp in list(self.mp.values())])    
+    self.anames = set().union(*[{a.__name__
+                                 for a in mp.actions}
+                                for mp in list(self.mp.values())])
     # print 'anames %s' % self.anames # DEBUG
 
     # set of anames of all observable actions in all model programs
     # observables obtain arg values from the environment, not parameter gen.
-    self.observables = set().union(*[set([a.__name__ 
-                                          for a in mp.module.observables])
+    self.observables = set().union(*[{a.__name__
+                                      for a in mp.module.observables}
                                      for mp in list(self.mp.values())])
-                                     # FSM and TestSuite must have .observables
     # print 'observables %s' % self.observables # DEBUG
 
     # dict from aname to set of all m where aname is in vocabulary
-    self.vocabularies = \
-        dict([(aname, set([m for m in self.mp if aname in 
-                           [a.__name__ for a in self.mp[m].actions]]))
-              for aname in self.anames])
+    self.vocabularies = dict([(
+        aname,
+        {
+            m
+            for m in self.mp
+            if aname in [a.__name__ for a in self.mp[m].actions]
+        },
+    ) for aname in self.anames])
     # print 'vocabularies %s' % self.vocabularies # DEBUG
                              
   # ProductModelProgram only provides methods etc. called by test runner etc.:
@@ -95,13 +97,11 @@ class ProductModelProgram(object):
     """
     True if action aname with args is enabled in the current state
     """
-    return all([m.ActionEnabled(getattr(m.module, aname), args)
-                # NOT! empty argument list in model matches any arguments
-                # NOT! or m.ActionEnabled(getattr(m.module, aname), ())
-                # handle zero-args/match-all inside m.ActionEnabled
-               for m in list(self.mp.values())
-               # aname might be an unshared action, not present in all mp
-               if aname in [ a.__name__ for a in m.actions ]])
+    return all(
+        m.ActionEnabled(getattr(m.module, aname), args)
+        for m in list(self.mp.values())
+        # aname might be an unshared action, not present in all mp
+        if aname in [a.__name__ for a in m.actions])
 
   def EnabledTransitions(self, cleanup):
     """
@@ -253,27 +253,27 @@ class ProductModelProgram(object):
     """
     Combine properties of mps in the current state
     """
-    return { 'accepting': 
-             # all mp in the current state are in their accepting states
-             all([ m.Properties()['accepting'] for m in list(self.mp.values()) ]),
-             'statefilter': 
-             all([ m.Properties()['statefilter'] for m in list(self.mp.values()) ]),
-             'stateinvariant': 
-             all([ m.Properties()['stateinvariant'] for m in list(self.mp.values()) ])
-             } 
+    return {
+        'accepting':
+        all(m.Properties()['accepting'] for m in list(self.mp.values())),
+        'statefilter':
+        all(m.Properties()['statefilter'] for m in list(self.mp.values())),
+        'stateinvariant':
+        all(m.Properties()['stateinvariant'] for m in list(self.mp.values())),
+    } 
   
   def NextProperties(self, next_properties):
     """
     Combine properties of mps in the next state
     """ 
-    return { 'accepting': 
-             # all mp in the next state are in their accepting states
-             all([ next_properties[m]['accepting'] for m in next_properties]),
-             'statefilter': 
-             all([ next_properties[m]['statefilter'] for m in next_properties]),
-             'stateinvariant': 
-             all([ next_properties[m]['stateinvariant'] for m in next_properties])
-             }
+    return {
+        'accepting':
+        all(next_properties[m]['accepting'] for m in next_properties),
+        'statefilter':
+        all(next_properties[m]['statefilter'] for m in next_properties),
+        'stateinvariant':
+        all(next_properties[m]['stateinvariant'] for m in next_properties),
+    }
 
   def DoAction(self, aname, args):
     """

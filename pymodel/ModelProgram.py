@@ -48,11 +48,11 @@ class ModelProgram(Model):
     # assign defaults to optional attributes
     # cleanup and observables are handled in Models base class
     if not hasattr(self.module, 'enablers'):
-      self.module.enablers = dict() # all actions always enabled
+      self.module.enablers = {}
     if not hasattr(self.module, 'domains'):
-      self.module.domains = dict() # empty domains
+      self.module.domains = {}
     if not hasattr(self.module, 'combinations'):
-      self.module.combinations = dict() # 'all', Cartesian product
+      self.module.combinations = {}
     if not hasattr(self.module, 'Accepting'):
       self.module.Accepting = self.TrueDefault
     if not hasattr(self.module, 'StateFilter'):
@@ -91,15 +91,14 @@ class ModelProgram(Model):
     # might be nice to support 'pairwise' also
     # return tuple not list, hashable so it can be key in dictionary 
     # also handle special case (None,) indicates empty argslist in domains
-    return tuple([() if x == (None,) else x for x in argslists ]) 
+    return tuple(() if x == (None,) else x for x in argslists) 
 
   def ParamGen(self):
     #print 'ModelProgram ParamGen for', self.module.__name__ #DEBUG
     #print '  actions ', self.actions
     #print '  domains ', self.module.domains
-    self.argslists = dict([(a, self.make_argslist(a))
-                           for a in self.actions
-                           if not a in self.module.observables ])
+    self.argslists = dict([(a, self.make_argslist(a)) for a in self.actions
+                           if a not in self.module.observables])
     
   def TrueDefault(self):
     return True
@@ -113,7 +112,7 @@ class ModelProgram(Model):
     try:
       self.module.Reset()
     except AttributeError: # Reset is optional, but there is no default
-      print('No Reset function for model program %s' % self.module.__name__)
+      print(f'No Reset function for model program {self.module.__name__}')
       sys.exit()       
 
   def ActionEnabled(self, a, args):
@@ -122,29 +121,24 @@ class ModelProgram(Model):
     """
     if a not in self.module.enablers:
       return True
-    else:
-      # Assumes enablers[a] has only one item, always true in this version
-      a_enabled = self.module.enablers[a][0]
-      nparams = len(inspect.getargspec(a_enabled)[0])
-      nargs = len(args)
-      # nparams == 0 means match any args
-      if nparams > 0 and nparams != nargs:
-        print('Error: %s needs %s arguments, got %s.  Check parameter generator.' %\
-            (a_enabled.__name__, nparams, nargs))
-        sys.exit(1) # Don't return, just exit with error status
-      else:
-        if nparams > 0:
-          return a_enabled(*args)
-        else:
-          return a_enabled() # nparams == 0 means match any args
+    # Assumes enablers[a] has only one item, always true in this version
+    a_enabled = self.module.enablers[a][0]
+    nparams = len(inspect.getargspec(a_enabled)[0])
+    nargs = len(args)
+    if nparams <= 0 or nparams == nargs:
+      return a_enabled(*args) if nparams > 0 else a_enabled()
+    print(
+        f'Error: {a_enabled.__name__} needs {nparams} arguments, got {nargs}.  Check parameter generator.'
+    )
+    sys.exit(1) # Don't return, just exit with error status
 
-  def Transitions(self, actions, argslists): 
+  def Transitions(self, actions, argslists):
     """
     Return tuple for all enabled transitions:
      (action, args, result, next state, properties)
     Pass appropriate params for observable or controllable actions + argslists
     """
-    enabled = list()
+    enabled = []
     for a in actions:
       enabled += [(a, args) + self.GetNext(a,args) # (a,args,result,next,prop's)
                   for args in argslists[a] if self.ActionEnabled(a, args) ]
@@ -162,7 +156,7 @@ class ModelProgram(Model):
     observableActions = set(argslists.keys()) & set(self.module.observables)
     if cleanup:
       observableActions = set(observableActions) & set(self.cleanup)
-    enabled = list()
+    enabled = []
     # Controllable actions use self.argslists assigned by ParamGen
     enabled += self.Transitions(controllableActions, self.argslists)
     # Observable actions use argslists parameter here
