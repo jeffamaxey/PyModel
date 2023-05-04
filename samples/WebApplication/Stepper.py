@@ -2,6 +2,7 @@
 WebApplication stepper (test harness)
 """
 
+
 import re
 import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
@@ -34,7 +35,7 @@ try:
 except ImportError:
   pass 
 
-print('webAppUrl: %s' % webAppUrl) # show which config file (if any) 
+print(f'webAppUrl: {webAppUrl}')
 
 # handlers that are the same for all users
 
@@ -53,7 +54,7 @@ class Session(object):
     self.opener = urllib.request.build_opener(self.cookie_handler,
                                        redirect_handler,debug_handler)
 
-session = dict() # each user's Session
+session = {}
 
 # helpers, determine test results by scraping the page
 
@@ -69,8 +70,7 @@ def loginSuccess(page):
 intPattern = re.compile(r'Number: (\d+)')
 
 def intContents(page):
-  m = intPattern.search(page)
-  if m:
+  if m := intPattern.search(page):
     return int(m.group(1))
 
 # stepper core
@@ -85,7 +85,7 @@ def TestAction(aname, args, modelResult):
   global session
 
   if aname == 'Initialize':
-    session = dict() # clear out cookies/session IDs from previous session
+    session = {}
 
   elif aname == 'Login':
     user = users[args[0]]
@@ -101,13 +101,9 @@ def TestAction(aname, args, modelResult):
     page = session[user].opener.open(webAppUrl, postArgs.encode()).read()
     if show_page:
       print(page)
-    # Check conformance, reproduce NModel WebApplication Stepper logic:
-    # check for login failed message, no check for positive indication of login
-    result = 'Success'
-    if loginFailed(page):
-      result = 'Failure'
+    result = 'Failure' if loginFailed(page) else 'Success'
     if result != modelResult:
-      return 'received Login %s, expected %s' % (result, modelResult)
+      return f'received Login {result}, expected {modelResult}'
 
   elif aname == 'Logout':
     user = users[args[0]]
@@ -119,7 +115,8 @@ def TestAction(aname, args, modelResult):
   elif aname == 'UpdateInt':
     user = users[args[0]]
     numArg = urllib.parse.urlencode({'num':args[1]})
-    page = session[user].opener.open("%s?%s" % (webAppUrl,numArg.encode())).read().decode()
+    page = (session[user].opener.open(
+        f"{webAppUrl}?{numArg.encode()}").read().decode())
     if show_page:
       print(page)
 
@@ -128,13 +125,13 @@ def TestAction(aname, args, modelResult):
     page = session[user].opener.open(webAppUrl).read().decode()
     if show_page:
       print(page)
-    numInPage = intContents(page)    
+    numInPage = intContents(page)
     if numInPage != modelResult:  # check conformance
-      return 'found %s in page, expected %s' % (numInPage, modelResult)
+      return f'found {numInPage} in page, expected {modelResult}'
     else:
       return None
   else:
-    raise NotImplementedError('action %s not handled by stepper' % aname)
+    raise NotImplementedError(f'action {aname} not handled by stepper')
 
 
 def Reset():

@@ -14,7 +14,7 @@ def main():
     else:
         fsm = __import__(args[0])
         fbasename = options.output if options.output else args[0]
-        fname = '%s.dot' % fbasename
+        fname = f'{fbasename}.dot'
         dotfile(fname, fsm, options.transitionLabels, options.noStateTooltip,
                 options.noTransitionTooltip)
 

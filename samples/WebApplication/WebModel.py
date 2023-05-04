@@ -3,13 +3,14 @@ WebModel, loosely based on C# WebApplication sample at nmodel.codeplex.com
 BUT this model is synchronous - Login is not split into start, finish actions
 """
 
+
 ### Model
 
 # State, with initial values
 
 mode = 'Initializing'  # can't call it 'state', that has special meaning
-usersLoggedIn = list()
-userToInt = dict()
+usersLoggedIn = []
+userToInt = {}
 
 # Actions and enabling conditions
 

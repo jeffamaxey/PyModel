@@ -15,11 +15,7 @@ def loginFailed(page):
 intPattern = re.compile(r'Number: (\d+)')
 
 def intContents(page):
-  m = intPattern.search(page)
-  if m:
-    return int(m.group(1))
-  else: 
-    return None
+  return int(m.group(1)) if (m := intPattern.search(page)) else None
 
 def main():
 
@@ -53,12 +49,12 @@ def main():
   num = 99
   wrongNum = 'xx'
   numArg = urllib.parse.urlencode({'num':num})
-  print(opener.open("%s?%s" % (webAppUrl,numArg)).read())
+  print(opener.open(f"{webAppUrl}?{numArg}").read())
 
   print('GET to retrieve page with integer')
   page = opener.open(webAppUrl).read()
   print(page)
-  print('%s found in page, expected %s' % (intContents(page), num))
+  print(f'{intContents(page)} found in page, expected {num}')
   print()
 
   print('GET to logout')

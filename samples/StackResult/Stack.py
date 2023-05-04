@@ -2,11 +2,12 @@
 Stack, here Pop result is return value, not argument
 """
 
+
 ### Model
 
 # State
 
-stack = list()
+stack = []
   
 # Actions
 

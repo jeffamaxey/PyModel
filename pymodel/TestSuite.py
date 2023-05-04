@@ -32,15 +32,15 @@ class TestSuite(Model):
       self.actions = list(self.actions_in_suite()) # default, copy
     Model.post_init(self) # uses self.actions
     # Revise the test suite to account for excluded, included actions
-    self.test_suite = list()
+    self.test_suite = []
     for run in self.module.testSuite:
-       new_run = list() # list not tuple, must mutable
-       for action in run:
-         if action[0] in self.actions:
-           new_run.append(action)
-         else:
-           break # truncate the run before the excluded action
-       self.test_suite.append(new_run)
+      new_run = []
+      for action in run:
+        if action[0] in self.actions:
+          new_run.append(action)
+        else:
+          break # truncate the run before the excluded action
+      self.test_suite.append(new_run)
     # prepare for first run
     self.irun = 0 # index of current test run in test suite
     self.pc = 0 # program counter
@@ -76,7 +76,7 @@ class TestSuite(Model):
     action a with args is enabled in the current state
     """
     step = self.test_suite[self.irun][self.pc]
-    action, arguments = step[0:2] # works whether or not step has result
+    action, arguments = step[:2]
     return (a == action and args == arguments)
 
   def EnabledTransitions(self, cleanup=False):
@@ -91,20 +91,19 @@ class TestSuite(Model):
     length = len(run)
     if self.pc < length:
       step = run[self.pc]
-      action, args = step[0:2]
+      action, args = step[:2]
       result = step[2] if len(step) > 2 else None # result is optional
       next = self.pc + 1
       accepting = (next == length)
       return([(action, args, result, (self.irun,next),
                self.make_properties(accepting))])
     else:
-      return list() # test run finished, nothing enabled, 
+      return [] 
 
   def DoAction(self, a, args):
     step = self.test_suite[self.irun][self.pc]
-    result = step[2] if len(step) > 2 else None # result is optional
     self.pc += 1
-    return result
+    return step[2] if len(step) > 2 else None
 
   def Current(self):
     return (self.irun, self.pc) 

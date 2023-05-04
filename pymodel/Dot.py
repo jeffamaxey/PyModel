@@ -12,11 +12,11 @@ def node(n, fsm):
         deadend = fsm.deadend
         runstarts = fsm.runstarts
     except AttributeError: # FSM modules written by hand may not have these
-        unsafe = list()
-        frontier = list()
-        finished = list()
-        deadend = list()
-        runstarts = list()
+        unsafe = []
+        frontier = []
+        finished = []
+        deadend = []
+        runstarts = []
     return '%s [ style=filled, shape=ellipse, peripheries=%s, fillcolor=%s' % \
         (n, 2 if n in fsm.accepting else 1, # peripheries
          'red' if n in unsafe else 
@@ -28,7 +28,7 @@ def node(n, fsm):
 
 def state(n, fsm, noStateTooltip):
     if noStateTooltip:
-        return '%s ]' % node(n,fsm)
+        return f'{node(n, fsm)} ]'
     else:
         return '%s,\n      tooltip="%s" ]' % (node(n,fsm), fsm.states[n])
 
@@ -37,39 +37,36 @@ def quote_string(x): # also appears in Analyzer
     if isinstance(x,tuple):
         return str(x)
     else:
-        return "'%s'" % x if isinstance(x, str) else "%s" % x
+        return f"'{x}'" if isinstance(x, str) else f"{x}"
 
 def rlabel(result):
-    return '/%s' % quote_string(result) if result != None else ''
+    return f'/{quote_string(result)}' if result != None else ''
 
 def transition(t, style, noTransitionTooltip):
     current, (a, args, result), next = t
-    action = '%s%s%s' % (a.__name__, args, rlabel(result))
+    action = f'{a.__name__}{args}{rlabel(result)}'
     if style == 'name':
-        label = '%s' % a.__name__
+        label = f'{a.__name__}'
     elif style == 'none':
-        label = '' 
-    else: # 'action'
+        label = ''
+    else:
         label = action
     if noTransitionTooltip:
-        return '%s -> %s [ label="%s" ]' % \
-            (current, next, label)
+        return f'{current} -> {next} [ label="{label}" ]'
     else:
-        return '%s -> %s [ label="%s", tooltip="%s" ]' % \
-            (current, next, label, action)
+        return f'{current} -> {next} [ label="{label}", tooltip="{action}" ]'
 
 def dotfile(fname, fsm, style, noStateTooltip, noTransitionTooltip):
-    f = open(fname, 'w')
-    f.write('digraph %s {\n' % os.path.basename(fname).partition('.')[0])
-    f.write('\n  // Nodes\n')
-    try: # FSM modules written by PyModel Analyzer have states attribute
-        f.writelines([ '  %s\n' % state(n,fsm,noStateTooltip) for n in fsm.states ])    
-    except: # FSM modules written by hand may not have states attribute
-        nodes = set([current for (current,trans,next) in fsm.graph] 
-                    + [next for (current,trans,next) in fsm.graph])
-        f.writelines([ '  %s ]\n' % node(n,fsm) for n in nodes ])    
-    f.write('\n  // Transitions\n')
-    f.writelines([ '  %s\n' % transition(t, style,noTransitionTooltip) 
-                   for t in fsm.graph ])
-    f.write('}\n')
-    f.close()
+    with open(fname, 'w') as f:
+        f.write('digraph %s {\n' % os.path.basename(fname).partition('.')[0])
+        f.write('\n  // Nodes\n')
+        try: # FSM modules written by PyModel Analyzer have states attribute
+            f.writelines([ '  %s\n' % state(n,fsm,noStateTooltip) for n in fsm.states ])    
+        except: # FSM modules written by hand may not have states attribute
+            nodes = set([current for (current,trans,next) in fsm.graph] 
+                        + [next for (current,trans,next) in fsm.graph])
+            f.writelines([ '  %s ]\n' % node(n,fsm) for n in nodes ])
+        f.write('\n  // Transitions\n')
+        f.writelines([ '  %s\n' % transition(t, style,noTransitionTooltip) 
+                       for t in fsm.graph ])
+        f.write('}\n')

@@ -71,6 +71,7 @@ this models the nondeterminism of threading.
 
 """
 
+
 from copy import copy
 
 ## Parameters
@@ -88,14 +89,14 @@ unsynchronized = False # False: use tracelock, True: ignore tracelock
 
 # tracecapture state
 
-pc = list() # program counter for each thread
-phase = list() # phase of each thread in tracecapture
-log = list() # contents of tracelog written by all threads
+pc = []
+phase = []
+log = []
 
 # file system state
 
-files = list() # filenames in filesystem
-listing = list() # listfiles return value, FIXME ret should be in tracecapture
+files = []
+listing = []
 
 ### Safety condition
 
@@ -119,13 +120,13 @@ def state_invariant():
 
 # run is allowed to stop
 def accepting():
-    return all([ phase[t] == 'done' for t in threads ])
+    return all(phase[t] == 'done' for t in threads)
 
 # reset before another run
 def reset():
     global pc, phase, log
-    pc = [ 0 for thread in program ]
-    phase = [ 'ready' for thread in program ]
+    pc = [0 for _ in program]
+    phase = ['ready' for _ in program]
     log = []
     files = []
 
@@ -156,10 +157,10 @@ def call(thread):
     phase[thread] = 'call' # release lock, execute call
     action = program[thread][pc[thread]]
     # for now. handle each action in *program* as a special case inline here
-    if action == 'openfile':
-        files.append('file0') # only works if openfiles just called once
     if action == 'listfiles':
         listing = copy(files) # must copy now because open may change files
+    elif action == 'openfile':
+        files.append('file0') # only works if openfiles just called once
 
 def finish_enabled(thread): 
     return (phase[thread] == 'call'
@@ -170,10 +171,10 @@ def finish(thread):
     phase[thread] = 'finish' # acquire lock
     action = program[thread][pc[thread]]
     # for now, handle each action in *program* as a special case inline here
-    if action == 'openfile':
-        ret = files[-1] # most recently appended
     if action == 'listfiles':
         ret = listing # most recently appended
+    elif action == 'openfile':
+        ret = files[-1] # most recently appended
     # write log, if it might be corrupted write 'XXX' at the end
     if state_invariant():
         log.append((thread, action, 'finish', ret))

@@ -14,6 +14,7 @@ or
 
 """
 
+
 import pprint
 import urllib.parse
 
@@ -23,9 +24,9 @@ import urllib.parse
 password = { 'user1':'123', 'user2':'234' }
 
 # data state
-integers = dict() # user to int
-strings = dict() # user to str
-sessions = dict() # cookie to user, assume each user has at most one session
+integers = {}
+strings = {}
+sessions = {}
 next_cookie = 0 
 
 def application(environ, start_response):
@@ -41,12 +42,10 @@ def application(environ, start_response):
         and environ['REQUEST_METHOD'] == 'GET' 
         and cookie not in sessions): # cookie might be None
         response_body = login_page
-        response_headers += [
-            ('Set-Cookie','PYSESSID=%s; path=/' % next_cookie)]
+        response_headers += [('Set-Cookie', f'PYSESSID={next_cookie}; path=/')]
         next_cookie += 1
         status = '200 OK'
-        
-    # log in, if successful show data form page
+
     elif (environ['PATH_INFO'] == '/webapp.py' 
           and environ['REQUEST_METHOD'] == 'POST'):
         wd = environ['wsgi.input']
@@ -58,7 +57,7 @@ def application(environ, start_response):
         passwd = vars['password'][0]
         if user in password and password[user] == passwd:
             sessions[cookie] = user
-            if not user in strings:
+            if user not in strings:
                 strings[user] = ''
             # CORRECT CODE comented out
             # if not user in integers:
@@ -74,11 +73,11 @@ def application(environ, start_response):
         else:
             response_body = login_failure_page
             status = '200 OK'
-            
-    # submit data in form page
-    elif (environ['PATH_INFO'] == '/webapp.py' 
-          and environ['REQUEST_METHOD'] == 'GET' 
-          and cookie in sessions):
+
+    elif (
+        environ['PATH_INFO'] == '/webapp.py'
+        and environ['REQUEST_METHOD'] == 'GET'
+    ):
         user = sessions[cookie]
         vars = urllib.parse.parse_qs(environ['QUERY_STRING'])
         if 'num' in vars:
@@ -89,20 +88,15 @@ def application(environ, start_response):
                                             strings[user])
         status = '200 OK'
 
-    # log out
     elif environ['PATH_INFO'] == '/logout.py':
         if cookie in sessions:
             del sessions[cookie]
         response_body = '' # blank page, like original NModel version
         status = '200 OK'
-        pass
-    
-    # unknown page
     elif environ['PATH_INFO'] not in ('/webapp.py', '/logout.py'):
         response_body = p404_page        
         status = '404 Not Found'
 
-    # nonsense: doStuff REQUEST_METHOD not GET or POST, or ... ?
     else:
         raise ValueError # send 500 Server Error
 

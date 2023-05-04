@@ -2,11 +2,12 @@
 Stack, based on C# example on TAW'09 slides
 """
 
+
 ### Model
 
 # State
 
-stack = list()
+stack = []
   
 # Actions
 
